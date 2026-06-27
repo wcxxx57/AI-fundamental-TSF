@@ -19,13 +19,7 @@ if __name__ == '__main__':
                             'numeric',
                             'mm_tsflib',
                             'mm_tsflib_nonlinear',
-                            'mm_tsflib_nonlinear_bounded',
-                            'mm_tsflib_nonlinear_shrink',
-                            'mm_tsflib_nonlinear_shrink_signed',
                             'mm_tsflib_vot_freq',
-                            'mm_tsflib_freq_residual',
-                            'mm_tsflib_vot_freq_shrink',
-                            'mm_tsflib_vot_freq_shrink_signed',
                             'llm_generated',
                             'random_text',
                         ],
@@ -140,18 +134,6 @@ if __name__ == '__main__':
                         help='low-frequency ratio for VoT-style frequency decomposition fusion')
     parser.add_argument('--vot_high_freq_ratio', type=float, default=0.3,
                         help='high-frequency ratio for VoT-style frequency decomposition fusion')
-    parser.add_argument('--fusion_band_delta_max', type=float, default=0.05,
-                        help='Maximum band-wise residual weight deviation around prompt_weight')
-    parser.add_argument('--fusion_gate_delta_max', type=float, default=0.03,
-                        help='Maximum bounded nonlinear gate deviation around prompt_weight')
-    parser.add_argument('--fusion_residual_shrink', type=int, default=0,
-                        help='Use a learnable scalar residual shrinkage over the original fixed MM-TSFlib fusion')
-    parser.add_argument('--fusion_shrink_init', type=float, default=0.1,
-                        help='Initial shrinkage for conservative residual fusion')
-    parser.add_argument('--fusion_shrink_max', type=float, default=0.5,
-                        help='Maximum residual shrinkage for conservative residual fusion')
-    parser.add_argument('--fusion_shrink_signed', type=int, default=0,
-                        help='Allow residual shrinkage to be signed in [-fusion_shrink_max, fusion_shrink_max]')
     parser.add_argument('--pool_type', type=str, default='avg', help='pooling type') #avg min max attention
     parser.add_argument('--date_name', type=str, default='end_date', help='matching date name in csv') #mlp linear
     parser.add_argument('--addHisRate', type=float, default=0.5, help='add historical rate')
@@ -223,20 +205,10 @@ if __name__ == '__main__':
         elif args.experiment == 'mm_tsflib':
             from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast
             Exp = Exp_Long_Term_Forecast
-        elif args.experiment in [
-            'mm_tsflib_nonlinear',
-            'mm_tsflib_nonlinear_bounded',
-            'mm_tsflib_nonlinear_shrink',
-            'mm_tsflib_nonlinear_shrink_signed',
-        ]:
+        elif args.experiment == 'mm_tsflib_nonlinear':
             from exp.exp_nonlinear_fusion_forecasting import Exp_Nonlinear_Fusion_Forecast
             Exp = Exp_Nonlinear_Fusion_Forecast
-        elif args.experiment in [
-            'mm_tsflib_vot_freq',
-            'mm_tsflib_freq_residual',
-            'mm_tsflib_vot_freq_shrink',
-            'mm_tsflib_vot_freq_shrink_signed',
-        ]:
+        elif args.experiment == 'mm_tsflib_vot_freq':
             from exp.exp_vot_frequency_fusion_forecasting import Exp_VoT_Frequency_Fusion_Forecast
             Exp = Exp_VoT_Frequency_Fusion_Forecast
         elif args.experiment == 'llm_generated':

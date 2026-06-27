@@ -7,7 +7,6 @@ import torch.nn.functional as F
 from torch import optim
 
 from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast, norm
-from exp.conservative_fusion import ResidualShrinkageFusion
 from utils.metrics import metric
 from utils.tools import EarlyStopping, visual
 
@@ -125,147 +124,19 @@ class VoTFrequencyDecompFusion(nn.Module):
         return fused_signal.transpose(1, 2)
 
 
-class BandResidualFrequencyFusion(nn.Module):
-    """Conservative frequency fusion over the text residual only.
-
-    The original six-weight VoT adaptation can rescale the numeric forecast
-    itself. This variant preserves the numeric forecast and learns only three
-    small band-wise weights over prompt_y - num_pred. At initialization all
-    three band weights equal prompt_weight, so the output is exactly the fixed
-    MM-TSFlib fusion.
-    """
-
-    component_names = ["residual_low", "residual_high", "residual_mid"]
-
-    def __init__(
-        self,
-        init_prompt_weight=0.01,
-        low_freq_ratio=0.1,
-        high_freq_ratio=0.3,
-        max_delta=0.05,
-    ):
-        super().__init__()
-        self.prompt_weight = float(init_prompt_weight)
-        self.low_freq_ratio = float(low_freq_ratio)
-        self.high_freq_ratio = float(high_freq_ratio)
-        self.max_delta = float(max_delta)
-        if self.max_delta < 0.0:
-            raise ValueError("max_delta must be non-negative.")
-        self.band_logits = nn.Parameter(torch.zeros(3, dtype=torch.float32))
-        self.last_weights = None
-        self.last_cutoffs = None
-
-    def current_weights_tensor(self):
-        return self.prompt_weight + self.max_delta * torch.tanh(self.band_logits)
-
-    def _effective_ratios(self, seq_len):
-        freq_len = seq_len // 2 + 1
-        if freq_len < 10:
-            low_freq_ratio = min(0.3, 2.0 / max(freq_len, 1))
-            high_freq_ratio = min(0.3, 2.0 / max(freq_len, 1))
-        else:
-            low_freq_ratio = self.low_freq_ratio
-            high_freq_ratio = self.high_freq_ratio
-        return low_freq_ratio, high_freq_ratio
-
-    @staticmethod
-    def _cutoffs(freq_len, low_freq_ratio, high_freq_ratio):
-        low_cutoff = max(1, int(freq_len * low_freq_ratio))
-        high_cutoff = min(freq_len - 1, int(freq_len * (1.0 - high_freq_ratio)))
-        if low_cutoff >= high_cutoff:
-            high_cutoff = min(freq_len, low_cutoff + 1)
-        return low_cutoff, high_cutoff
-
-    def frequency_decomposition(self, signal):
-        """Split [B, C, T] into low, high, and middle frequency components."""
-        seq_len = signal.shape[2]
-        low_freq_ratio, high_freq_ratio = self._effective_ratios(seq_len)
-        fft_signal = torch.fft.rfft(signal, dim=2)
-        freq_len = fft_signal.shape[2]
-        low_cutoff, high_cutoff = self._cutoffs(freq_len, low_freq_ratio, high_freq_ratio)
-        self.last_cutoffs = {
-            "seq_len": int(seq_len),
-            "freq_len": int(freq_len),
-            "low_cutoff": int(low_cutoff),
-            "high_cutoff": int(high_cutoff),
-            "low_freq_ratio": float(low_freq_ratio),
-            "high_freq_ratio": float(high_freq_ratio),
-        }
-
-        low_fft = torch.zeros_like(fft_signal)
-        high_fft = torch.zeros_like(fft_signal)
-        mid_fft = torch.zeros_like(fft_signal)
-        low_fft[:, :, :low_cutoff] = fft_signal[:, :, :low_cutoff]
-        high_fft[:, :, high_cutoff:] = fft_signal[:, :, high_cutoff:]
-        mid_fft[:, :, low_cutoff:high_cutoff] = fft_signal[:, :, low_cutoff:high_cutoff]
-
-        low_freq = torch.fft.irfft(low_fft, n=seq_len, dim=2)
-        high_freq = torch.fft.irfft(high_fft, n=seq_len, dim=2)
-        mid_freq = torch.fft.irfft(mid_fft, n=seq_len, dim=2)
-        return low_freq, high_freq, mid_freq
-
-    def forward(self, num_pred, prompt_y):
-        if num_pred.ndim != 3 or prompt_y.ndim != 3:
-            raise ValueError("BandResidualFrequencyFusion expects [B, T, C] tensors.")
-        if num_pred.shape != prompt_y.shape:
-            raise ValueError(
-                "Numeric and text predictions must have the same shape, got {} and {}".format(
-                    tuple(num_pred.shape),
-                    tuple(prompt_y.shape),
-                )
-            )
-
-        residual = (prompt_y - num_pred).transpose(1, 2)
-        residual_low, residual_high, residual_mid = self.frequency_decomposition(residual)
-        stacked_components = torch.stack([residual_low, residual_high, residual_mid], dim=0)
-        weights = self.current_weights_tensor()
-        self.last_weights = weights.detach().cpu()
-        fused_residual = torch.sum(stacked_components * weights.view(3, 1, 1, 1), dim=0)
-        return num_pred + fused_residual.transpose(1, 2)
-
-
 class Exp_VoT_Frequency_Fusion_Forecast(Exp_Long_Term_Forecast):
     def __init__(self, args):
         super(Exp_VoT_Frequency_Fusion_Forecast, self).__init__(args)
-        self.use_band_residual = self._experiment_name() == "mm_tsflib_freq_residual"
-        self.use_residual_shrink = bool(getattr(args, "fusion_residual_shrink", 0)) or self._experiment_name().endswith(
-            "_shrink"
-        )
         fusion_kwargs = {
             "init_prompt_weight": self.prompt_weight,
             "low_freq_ratio": getattr(args, "vot_low_freq_ratio", 0.1),
             "high_freq_ratio": getattr(args, "vot_high_freq_ratio", 0.3),
         }
-        if self.use_band_residual:
-            self.vot_frequency_fusion = BandResidualFrequencyFusion(
-                max_delta=getattr(args, "fusion_band_delta_max", 0.05),
-                **fusion_kwargs,
-            ).to(self.device)
-        else:
-            self.vot_frequency_fusion = VoTFrequencyDecompFusion(**fusion_kwargs).to(self.device)
-        if self.use_residual_shrink:
-            self.residual_shrinkage = ResidualShrinkageFusion(
-                init_shrink=getattr(args, "fusion_shrink_init", 0.1),
-                max_shrink=getattr(args, "fusion_shrink_max", 0.5),
-                signed=bool(getattr(args, "fusion_shrink_signed", 0))
-                or self._experiment_name().endswith("_shrink_signed"),
-            ).to(self.device)
-        else:
-            self.residual_shrinkage = None
+        self.vot_frequency_fusion = VoTFrequencyDecompFusion(**fusion_kwargs).to(self.device)
 
     def _fusion_design(self):
-        if self.use_band_residual:
-            name = "band_residual_frequency_fusion"
-            initialization = (
-                "residual band weights start at prompt_weight, so output starts exactly as fixed MM-TSFlib"
-            )
-        else:
-            name = (
-                "vot_frequency_decomposition_fusion_with_residual_shrinkage"
-                if self.use_residual_shrink
-                else "vot_frequency_decomposition_fusion"
-            )
-            initialization = "numeric components start at 1 - prompt_weight; text components start at prompt_weight"
+        name = "vot_frequency_decomposition_fusion"
+        initialization = "numeric components start at 1 - prompt_weight; text components start at prompt_weight"
         return {
             "name": name,
             "source_reference": "repo/VoT-main/exp/exp_long_term_forecasting_clip.py",
@@ -273,14 +144,7 @@ class Exp_VoT_Frequency_Fusion_Forecast(Exp_Long_Term_Forecast):
             "init_prompt_weight": self.prompt_weight,
             "low_freq_ratio": float(self.vot_frequency_fusion.low_freq_ratio),
             "high_freq_ratio": float(self.vot_frequency_fusion.high_freq_ratio),
-            "band_residual": self.use_band_residual,
-            "band_delta_max": float(getattr(self.vot_frequency_fusion, "max_delta", 0.0)),
             "initialization": initialization,
-            "residual_shrinkage": self.use_residual_shrink,
-            "shrink_init": float(getattr(self.args, "fusion_shrink_init", 0.1)),
-            "shrink_max": float(getattr(self.args, "fusion_shrink_max", 0.5)),
-            "shrink_signed": bool(getattr(self.args, "fusion_shrink_signed", 0))
-            or self._experiment_name().endswith("_shrink_signed"),
         }
 
     def _set_train_mode(self):
@@ -288,28 +152,19 @@ class Exp_VoT_Frequency_Fusion_Forecast(Exp_Long_Term_Forecast):
         self.mlp.train()
         self.mlp_proj.train()
         self.vot_frequency_fusion.train()
-        if self.residual_shrinkage is not None:
-            self.residual_shrinkage.train()
 
     def _set_eval_mode(self):
         self.model.eval()
         self.mlp.eval()
         self.mlp_proj.eval()
         self.vot_frequency_fusion.eval()
-        if self.residual_shrinkage is not None:
-            self.residual_shrinkage.eval()
 
     def _select_optimizer_fusion(self):
-        params = list(self.vot_frequency_fusion.parameters())
-        if self.residual_shrinkage is not None:
-            params.extend(self.residual_shrinkage.parameters())
-        return optim.Adam(params, lr=self.args.learning_rate3)
+        return optim.Adam(self.vot_frequency_fusion.parameters(), lr=self.args.learning_rate3)
 
     def _checkpoint_state(self, setting):
         state = super()._checkpoint_state(setting)
         state["vot_frequency_fusion"] = self.vot_frequency_fusion.state_dict()
-        if self.residual_shrinkage is not None:
-            state["residual_shrinkage"] = self.residual_shrinkage.state_dict()
         state["fusion_design"] = self._fusion_design()
         return state
 
@@ -323,8 +178,6 @@ class Exp_VoT_Frequency_Fusion_Forecast(Exp_Long_Term_Forecast):
                 self.mlp_proj.load_state_dict(checkpoint["mlp_proj"])
             if "vot_frequency_fusion" in checkpoint:
                 self.vot_frequency_fusion.load_state_dict(checkpoint["vot_frequency_fusion"])
-            if self.residual_shrinkage is not None and "residual_shrinkage" in checkpoint:
-                self.residual_shrinkage.load_state_dict(checkpoint["residual_shrinkage"])
         else:
             self.model.load_state_dict(checkpoint)
 
@@ -397,12 +250,7 @@ class Exp_VoT_Frequency_Fusion_Forecast(Exp_Long_Term_Forecast):
         num_pred, target = self._numeric_forward(batch_x, batch_y, batch_x_mark, batch_y_mark)
         prompt_signal = self._pool_text(prompt_emb, num_pred)
         prompt_y = norm(prompt_signal) + prior_y
-        complex_outputs = self.vot_frequency_fusion(num_pred, prompt_y)
-        if self.residual_shrinkage is not None:
-            base_outputs = (1.0 - self.prompt_weight) * num_pred + self.prompt_weight * prompt_y
-            outputs = self.residual_shrinkage(base_outputs, complex_outputs)
-        else:
-            outputs = complex_outputs
+        outputs = self.vot_frequency_fusion(num_pred, prompt_y)
         return outputs, target
 
     def vali(self, vali_data, vali_loader, criterion):
@@ -592,13 +440,6 @@ class Exp_VoT_Frequency_Fusion_Forecast(Exp_Long_Term_Forecast):
                 component_names[i]: float(avg_test_weights[i]) for i in range(len(component_names))
             },
             "last_frequency_cutoffs": self.vot_frequency_fusion.last_cutoffs,
-            "fusion_residual_shrinkage": bool(self.use_residual_shrink),
-            "fusion_shrinkage": self.residual_shrinkage.value() if self.residual_shrinkage is not None else None,
-            "fusion_shrinkage_max": float(getattr(self.args, "fusion_shrink_max", 0.5))
-            if self.residual_shrinkage is not None
-            else None,
-            "fusion_shrinkage_signed": bool(getattr(self.args, "fusion_shrink_signed", 0))
-            or self._experiment_name().endswith("_shrink_signed"),
             "mae": float(mae),
             "mse": float(mse),
             "rmse": float(rmse),

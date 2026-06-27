@@ -6,7 +6,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import optim
 
-from exp.conservative_fusion import ResidualShrinkageFusion
 from exp.exp_long_term_forecasting import Exp_Long_Term_Forecast, norm
 from utils.metrics import metric
 from utils.tools import EarlyStopping, visual
@@ -46,85 +45,19 @@ class SimpleAdaptiveGateFusion(nn.Module):
         return num_pred + gate * (prompt_y - num_pred)
 
 
-class BoundedAdaptiveGateFusion(nn.Module):
-    """Adaptive gate constrained to stay near the fixed MM-TSFlib weight."""
-
-    def __init__(self, init_weight=0.01, hidden_dim=8, max_delta=0.03):
-        super().__init__()
-        self.init_weight = float(init_weight)
-        self.max_delta = float(max_delta)
-        if self.max_delta < 0.0:
-            raise ValueError("max_delta must be non-negative.")
-        hidden_dim = max(2, int(hidden_dim))
-        self.gate = nn.Sequential(
-            nn.Linear(3, hidden_dim),
-            nn.GELU(),
-            nn.Linear(hidden_dim, 1),
-        )
-        self.last_gate = None
-        self._reset_to_linear_start()
-
-    def _reset_to_linear_start(self):
-        nn.init.zeros_(self.gate[-1].weight)
-        nn.init.zeros_(self.gate[-1].bias)
-
-    def forward(self, num_pred, prompt_y):
-        features = torch.cat([num_pred, prompt_y, prompt_y - num_pred], dim=-1)
-        raw_gate = self.gate(features)
-        gate = self.init_weight + self.max_delta * torch.tanh(raw_gate)
-        gate = torch.clamp(gate, 0.0, 1.0)
-        self.last_gate = gate.detach()
-        return num_pred + gate * (prompt_y - num_pred)
-
-
 class Exp_Nonlinear_Fusion_Forecast(Exp_Long_Term_Forecast):
     def __init__(self, args):
         super(Exp_Nonlinear_Fusion_Forecast, self).__init__(args)
-        self.use_bounded_gate = self._experiment_name() == "mm_tsflib_nonlinear_bounded"
-        self.use_residual_shrink = bool(getattr(args, "fusion_residual_shrink", 0)) or self._experiment_name().endswith(
-            "_shrink"
-        )
-        if self.use_bounded_gate:
-            self.nonlinear_fusion = BoundedAdaptiveGateFusion(
-                init_weight=self.prompt_weight,
-                hidden_dim=8,
-                max_delta=getattr(args, "fusion_gate_delta_max", 0.03),
-            ).to(self.device)
-        else:
-            self.nonlinear_fusion = SimpleAdaptiveGateFusion(init_weight=self.prompt_weight, hidden_dim=8).to(self.device)
-        if self.use_residual_shrink:
-            self.residual_shrinkage = ResidualShrinkageFusion(
-                init_shrink=getattr(args, "fusion_shrink_init", 0.1),
-                max_shrink=getattr(args, "fusion_shrink_max", 0.5),
-                signed=bool(getattr(args, "fusion_shrink_signed", 0))
-                or self._experiment_name().endswith("_shrink_signed"),
-            ).to(self.device)
-        else:
-            self.residual_shrinkage = None
-        self._gate_stats = []
+        self.nonlinear_fusion = SimpleAdaptiveGateFusion(init_weight=self.prompt_weight, hidden_dim=8).to(self.device)
 
     def _fusion_design(self):
-        if self.use_bounded_gate:
-            name = "bounded_mlp_adaptive_gate"
-            gate_constraint = "gate = prompt_weight + max_delta * tanh(MLP(features))"
-        else:
-            name = (
-                "simple_mlp_adaptive_gate_with_residual_shrinkage"
-                if self.use_residual_shrink
-                else "simple_mlp_adaptive_gate"
-            )
-            gate_constraint = "unbounded sigmoid gate in [0, 1]"
+        name = "simple_mlp_adaptive_gate"
+        gate_constraint = "sigmoid gate in [0, 1], initialized to prompt_weight"
         return {
             "name": name,
             "init_weight": self.prompt_weight,
             "gate_hidden_dim": 8,
             "gate_constraint": gate_constraint,
-            "gate_delta_max": float(getattr(self.nonlinear_fusion, "max_delta", 0.0)),
-            "residual_shrinkage": self.use_residual_shrink,
-            "shrink_init": float(getattr(self.args, "fusion_shrink_init", 0.1)),
-            "shrink_max": float(getattr(self.args, "fusion_shrink_max", 0.5)),
-            "shrink_signed": bool(getattr(self.args, "fusion_shrink_signed", 0))
-            or self._experiment_name().endswith("_shrink_signed"),
         }
 
     def _set_train_mode(self):
@@ -132,28 +65,19 @@ class Exp_Nonlinear_Fusion_Forecast(Exp_Long_Term_Forecast):
         self.mlp.train()
         self.mlp_proj.train()
         self.nonlinear_fusion.train()
-        if self.residual_shrinkage is not None:
-            self.residual_shrinkage.train()
 
     def _set_eval_mode(self):
         self.model.eval()
         self.mlp.eval()
         self.mlp_proj.eval()
         self.nonlinear_fusion.eval()
-        if self.residual_shrinkage is not None:
-            self.residual_shrinkage.eval()
 
     def _select_optimizer_fusion(self):
-        params = list(self.nonlinear_fusion.parameters())
-        if self.residual_shrinkage is not None:
-            params.extend(self.residual_shrinkage.parameters())
-        return optim.Adam(params, lr=self.args.learning_rate3)
+        return optim.Adam(self.nonlinear_fusion.parameters(), lr=self.args.learning_rate3)
 
     def _checkpoint_state(self, setting):
         state = super()._checkpoint_state(setting)
         state["nonlinear_fusion"] = self.nonlinear_fusion.state_dict()
-        if self.residual_shrinkage is not None:
-            state["residual_shrinkage"] = self.residual_shrinkage.state_dict()
         state["fusion_design"] = self._fusion_design()
         return state
 
@@ -167,8 +91,6 @@ class Exp_Nonlinear_Fusion_Forecast(Exp_Long_Term_Forecast):
                 self.mlp_proj.load_state_dict(checkpoint["mlp_proj"])
             if "nonlinear_fusion" in checkpoint:
                 self.nonlinear_fusion.load_state_dict(checkpoint["nonlinear_fusion"])
-            if self.residual_shrinkage is not None and "residual_shrinkage" in checkpoint:
-                self.residual_shrinkage.load_state_dict(checkpoint["residual_shrinkage"])
         else:
             self.model.load_state_dict(checkpoint)
 
@@ -241,12 +163,7 @@ class Exp_Nonlinear_Fusion_Forecast(Exp_Long_Term_Forecast):
         num_pred, target = self._numeric_forward(batch_x, batch_y, batch_x_mark, batch_y_mark)
         prompt_signal = self._pool_text(prompt_emb, num_pred)
         prompt_y = norm(prompt_signal) + prior_y
-        complex_outputs = self.nonlinear_fusion(num_pred, prompt_y)
-        if self.residual_shrinkage is not None:
-            base_outputs = (1.0 - self.prompt_weight) * num_pred + self.prompt_weight * prompt_y
-            outputs = self.residual_shrinkage(base_outputs, complex_outputs)
-        else:
-            outputs = complex_outputs
+        outputs = self.nonlinear_fusion(num_pred, prompt_y)
         return outputs, target
 
     def vali(self, vali_data, vali_loader, criterion):
@@ -430,13 +347,6 @@ class Exp_Nonlinear_Fusion_Forecast(Exp_Long_Term_Forecast):
             "fusion_design": self._fusion_design(),
             "fusion_gate_hidden_dim": 8,
             "fusion_gate_mean": float(np.mean(gate_means)) if gate_means else None,
-            "fusion_residual_shrinkage": bool(self.use_residual_shrink),
-            "fusion_shrinkage": self.residual_shrinkage.value() if self.residual_shrinkage is not None else None,
-            "fusion_shrinkage_max": float(getattr(self.args, "fusion_shrink_max", 0.5))
-            if self.residual_shrinkage is not None
-            else None,
-            "fusion_shrinkage_signed": bool(getattr(self.args, "fusion_shrink_signed", 0))
-            or self._experiment_name().endswith("_shrink_signed"),
             "mae": float(mae),
             "mse": float(mse),
             "rmse": float(rmse),

@@ -5,24 +5,11 @@ set -euo pipefail
 #   bash scripts/run_long_matrix.sh [experiment] [model] [dataset] [gpu] [dry_run]
 #
 # Positional arguments accept "all" or comma-separated values.
-#   experiment: all | numeric | mm_tsflib | mm_tsflib_nonlinear | mm_tsflib_nonlinear_bounded | mm_tsflib_nonlinear_shrink | mm_tsflib_nonlinear_shrink_signed | mm_tsflib_vot_freq | mm_tsflib_freq_residual | mm_tsflib_vot_freq_shrink | mm_tsflib_vot_freq_shrink_signed | llm_generated | random_text
+#   experiment: all | numeric | mm_tsflib | mm_tsflib_nonlinear | mm_tsflib_vot_freq | llm_generated | random_text
 #   model:      all | DLinear | PatchTST
 #   dataset:    all | Energy | Public_Health | ...
 #   gpu:        CUDA_VISIBLE_DEVICES id, default 0
 #   dry_run:    1 prints commands only, default 0
-#
-# Examples:
-#   bash scripts/run_long_matrix.sh
-#   bash scripts/run_long_matrix.sh numeric PatchTST Public_Health 0
-#   bash scripts/run_long_matrix.sh mm_tsflib PatchTST Energy,Public_Health 0 1
-#   bash scripts/run_long_matrix.sh mm_tsflib_nonlinear PatchTST Energy,Public_Health 0 1
-#   bash scripts/run_long_matrix.sh mm_tsflib_vot_freq PatchTST Energy,Public_Health 0 1
-#   bash scripts/run_long_matrix.sh mm_tsflib_vot_freq_shrink PatchTST Energy,Public_Health 0 1
-#
-# In the submit package, llm_generated reads from:
-#   data/llm-generated/<Dataset>_H<SEQ_LEN>_F<pred_len>_ecnu_llm.csv
-# while keeping root_path as data/<Dataset> so result parsers preserve the
-# original dataset name.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
@@ -38,13 +25,7 @@ ALL_EXPERIMENTS=(
   "numeric"
   "mm_tsflib"
   "mm_tsflib_nonlinear"
-  "mm_tsflib_nonlinear_bounded"
-  "mm_tsflib_nonlinear_shrink"
-  "mm_tsflib_nonlinear_shrink_signed"
   "mm_tsflib_vot_freq"
-  "mm_tsflib_freq_residual"
-  "mm_tsflib_vot_freq_shrink"
-  "mm_tsflib_vot_freq_shrink_signed"
   "llm_generated"
   "random_text"
 )
@@ -68,21 +49,17 @@ DROPOUT="${DROPOUT:-0.1}"
 LR="${LR:-0.0001}"
 LLM_MODEL="${LLM_MODEL:-BERT}"
 PROMPT_WEIGHT="${PROMPT_WEIGHT:-0.1}"
-VOT_LOW_FREQ_RATIO="${VOT_LOW_FREQ_RATIO:-0.1}"
-VOT_HIGH_FREQ_RATIO="${VOT_HIGH_FREQ_RATIO:-0.3}"
-FUSION_BAND_DELTA_MAX="${FUSION_BAND_DELTA_MAX:-0.05}"
-FUSION_GATE_DELTA_MAX="${FUSION_GATE_DELTA_MAX:-0.03}"
-FUSION_SHRINK_INIT="${FUSION_SHRINK_INIT:-0.1}"
-FUSION_SHRINK_MAX="${FUSION_SHRINK_MAX:-0.5}"
-FUSION_SHRINK_SIGNED="${FUSION_SHRINK_SIGNED:-0}"
 POOL_TYPE="${POOL_TYPE:-avg}"
 USE_FULLMODEL="${USE_FULLMODEL:-0}"
+VOT_LOW_FREQ_RATIO="${VOT_LOW_FREQ_RATIO:-0.1}"
+VOT_HIGH_FREQ_RATIO="${VOT_HIGH_FREQ_RATIO:-0.3}"
 RANDOM_TEXT_COLUMN="${RANDOM_TEXT_COLUMN:-Random_Text}"
 RANDOM_SOURCE_TEXT_COLUMN="${RANDOM_SOURCE_TEXT_COLUMN:-Final_Search_${TEXT_LEN}}"
 RANDOM_TEXT_SEED="${RANDOM_TEXT_SEED:-20240624}"
 RANDOM_TEXT_MODE="${RANDOM_TEXT_MODE:-char_noise}"
 BUILD_RANDOM_TEXT="${BUILD_RANDOM_TEXT:-1}"
-OUTPUT_BASE_DIR="${OUTPUT_BASE_DIR:-./results}"
+OUTPUT_BASE_DIR="${OUTPUT_BASE_DIR:-./results/raw_runs}"
+SUMMARY_DIR="${SUMMARY_DIR:-./results/results_summary}"
 
 select_items() {
   local selected="$1"
@@ -164,21 +141,21 @@ mapfile -t DATASETS < <(select_items "${DATASET_ARG}" "${ALL_DATASETS[@]}")
 mapfile -t PRED_LEN_LIST < <(tr ',' '\n' <<< "${PRED_LENS}")
 mapfile -t SEED_LIST < <(tr ',' '\n' <<< "${SEEDS}")
 
-mkdir -p "${OUTPUT_BASE_DIR}"
+mkdir -p "${OUTPUT_BASE_DIR}" "${SUMMARY_DIR}"
 
 for experiment in "${EXPERIMENTS[@]}"; do
   for model_name in "${MODELS[@]}"; do
     for dataset in "${DATASETS[@]}"; do
       root_path="./data/${dataset}"
       raw_data_path="$(data_path_for_dataset "${dataset}")"
-      data_path="${raw_data_path}"
+
       if [[ "${experiment}" == "random_text" ]]; then
-        data_path="${raw_data_path%.csv}_random_text.csv"
-        if [[ ! -f "${root_path}/${data_path}" && "${BUILD_RANDOM_TEXT}" == "1" ]]; then
+        random_data_path="${raw_data_path%.csv}_random_text.csv"
+        if [[ ! -f "${root_path}/${random_data_path}" && "${BUILD_RANDOM_TEXT}" == "1" ]]; then
           build_cmd=(
             python scripts/build_random_text_control_dataset.py
             --input "${root_path}/${raw_data_path}"
-            --output "${root_path}/${data_path}"
+            --output "${root_path}/${random_data_path}"
             --source-text-column "${RANDOM_SOURCE_TEXT_COLUMN}"
             --text-column "${RANDOM_TEXT_COLUMN}"
             --mode "${RANDOM_TEXT_MODE}"
@@ -197,25 +174,22 @@ for experiment in "${EXPERIMENTS[@]}"; do
         for pred_len in "${PRED_LEN_LIST[@]}"; do
           data_path="${raw_data_path}"
           if [[ "${experiment}" == "llm_generated" ]]; then
-            # Keep root_path at ./data/<dataset> so downstream result parsers
-            # still recover the original dataset name from args.root_path.
-            # The actual file is read from submit/data/llm-generated/.
             data_path="../llm-generated/${dataset}_H${SEQ_LEN}_F${pred_len}_ecnu_llm.csv"
           elif [[ "${experiment}" == "random_text" ]]; then
             data_path="${raw_data_path%.csv}_random_text.csv"
           fi
 
-          model_id="${dataset}_${model_name}_${experiment}_s${seed}_sl${SEQ_LEN}_pl${pred_len}"
-          output_dir="${OUTPUT_BASE_DIR}/${experiment}_${model_name}_long_term"
-          save_name="${OUTPUT_BASE_DIR}/${experiment}_${model_name}_summary.txt"
           combo_check_path="${root_path}/${data_path}"
           if [[ "${DRY_RUN}" == "1" && "${experiment}" == "random_text" && ! -f "${combo_check_path}" ]]; then
             combo_check_path="${root_path}/${raw_data_path}"
           fi
-
           if ! valid_combo "${combo_check_path}" "${pred_len}" "${dataset}"; then
             continue
           fi
+
+          model_id="${dataset}_${model_name}_${experiment}_s${seed}_sl${SEQ_LEN}_pl${pred_len}"
+          output_dir="${OUTPUT_BASE_DIR}/${experiment}_${model_name}_long_term"
+          save_name="${SUMMARY_DIR}/${experiment}_${model_name}_summary.txt"
 
           existing_metric="$(compgen -G "${output_dir}/long_term_forecast_${model_id}_*/metrics.json" | head -n 1 || true)"
           if [[ -n "${existing_metric}" ]]; then
@@ -257,7 +231,7 @@ for experiment in "${EXPERIMENTS[@]}"; do
             --output_dir "${output_dir}"
           )
 
-          if [[ "${experiment}" == "mm_tsflib" || "${experiment}" == "mm_tsflib_nonlinear" || "${experiment}" == "mm_tsflib_nonlinear_bounded" || "${experiment}" == "mm_tsflib_nonlinear_shrink" || "${experiment}" == "mm_tsflib_nonlinear_shrink_signed" || "${experiment}" == "mm_tsflib_vot_freq" || "${experiment}" == "mm_tsflib_freq_residual" || "${experiment}" == "mm_tsflib_vot_freq_shrink" || "${experiment}" == "mm_tsflib_vot_freq_shrink_signed" || "${experiment}" == "llm_generated" || "${experiment}" == "random_text" ]]; then
+          if [[ "${experiment}" != "numeric" ]]; then
             cmd+=(
               --type_tag "#F#"
               --prompt_weight "${PROMPT_WEIGHT}"
@@ -268,30 +242,11 @@ for experiment in "${EXPERIMENTS[@]}"; do
             )
           fi
 
-          if [[ "${experiment}" == "mm_tsflib_vot_freq" || "${experiment}" == "mm_tsflib_freq_residual" || "${experiment}" == "mm_tsflib_vot_freq_shrink" || "${experiment}" == "mm_tsflib_vot_freq_shrink_signed" ]]; then
+          if [[ "${experiment}" == "mm_tsflib_vot_freq" ]]; then
             cmd+=(
               --vot_low_freq_ratio "${VOT_LOW_FREQ_RATIO}"
               --vot_high_freq_ratio "${VOT_HIGH_FREQ_RATIO}"
             )
-          fi
-
-          if [[ "${experiment}" == "mm_tsflib_freq_residual" ]]; then
-            cmd+=(--fusion_band_delta_max "${FUSION_BAND_DELTA_MAX}")
-          fi
-
-          if [[ "${experiment}" == "mm_tsflib_nonlinear_bounded" ]]; then
-            cmd+=(--fusion_gate_delta_max "${FUSION_GATE_DELTA_MAX}")
-          fi
-
-          if [[ "${experiment}" == "mm_tsflib_nonlinear_shrink" || "${experiment}" == "mm_tsflib_nonlinear_shrink_signed" || "${experiment}" == "mm_tsflib_vot_freq_shrink" || "${experiment}" == "mm_tsflib_vot_freq_shrink_signed" ]]; then
-            cmd+=(
-              --fusion_residual_shrink 1
-              --fusion_shrink_init "${FUSION_SHRINK_INIT}"
-              --fusion_shrink_max "${FUSION_SHRINK_MAX}"
-            )
-            if [[ "${FUSION_SHRINK_SIGNED}" == "1" || "${experiment}" == *"_shrink_signed" ]]; then
-              cmd+=(--fusion_shrink_signed 1)
-            fi
           fi
 
           if [[ "${experiment}" == "llm_generated" ]]; then
@@ -306,7 +261,7 @@ for experiment in "${EXPERIMENTS[@]}"; do
               --text_origin_offset "-1"
               --prior_mode "origin_repeat"
             )
-          elif [[ "${experiment}" == "mm_tsflib" || "${experiment}" == "mm_tsflib_nonlinear" || "${experiment}" == "mm_tsflib_nonlinear_bounded" || "${experiment}" == "mm_tsflib_nonlinear_shrink" || "${experiment}" == "mm_tsflib_nonlinear_shrink_signed" || "${experiment}" == "mm_tsflib_vot_freq" || "${experiment}" == "mm_tsflib_freq_residual" || "${experiment}" == "mm_tsflib_vot_freq_shrink" || "${experiment}" == "mm_tsflib_vot_freq_shrink_signed" ]]; then
+          elif [[ "${experiment}" == "mm_tsflib" || "${experiment}" == "mm_tsflib_nonlinear" || "${experiment}" == "mm_tsflib_vot_freq" ]]; then
             cmd+=(
               --text_origin_offset "-1"
               --prior_mode "origin_repeat"

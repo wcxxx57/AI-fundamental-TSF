@@ -1,1 +1,7 @@
-raw_*
+__pycache__/
+*.py[cod]
+.venv/
+checkpoints/
+results/raw_*/
+results/*_long_term/
+results/smoke*/
