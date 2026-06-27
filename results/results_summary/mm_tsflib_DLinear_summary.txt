@@ -1,0 +1,116 @@
+long_term_forecast_Algriculture_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.9234005808830261, mae:0.6894813776016235, rmse:0.9609373211860657, mape:0.19716566801071167, mspe:0.05656249076128006
+mse_orig:345.5479431152344, mae_orig:13.337722778320312, rmse_orig:18.58892059326172, mape_orig:0.05945007875561714, mspe_orig:0.006229751743376255
+
+long_term_forecast_Algriculture_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.4438557624816895, mae:0.8439997434616089, rmse:1.2016054391860962, mape:0.23944784700870514, mspe:0.08490565419197083
+mse_orig:540.3086547851562, mae_orig:16.326810836791992, rmse_orig:23.24454116821289, mape_orig:0.07275378704071045, mspe_orig:0.009688080288469791
+
+long_term_forecast_Algriculture_DLinear_mm_tsflib_s2021_sl24_pl36_DLinear_custom_ftS_sl24_ll12_pl36_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.6140942573547363, mae:0.8695565462112427, rmse:1.270470142364502, mape:0.2539643347263336, mspe:0.09685570001602173
+mse_orig:604.0139770507812, mae_orig:16.821197509765625, rmse_orig:24.576696395874023, mape_orig:0.07565835863351822, mspe_orig:0.010898491367697716
+
+long_term_forecast_Algriculture_DLinear_mm_tsflib_s2021_sl24_pl48_DLinear_custom_ftS_sl24_ll12_pl48_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.686332106590271, mae:0.8743990659713745, rmse:1.298588514328003, mape:0.25769731402397156, mspe:0.10168155282735825
+mse_orig:631.0462646484375, mae_orig:16.914875030517578, rmse_orig:25.120634078979492, mape_orig:0.07630525529384613, mspe_orig:0.011409899219870567
+
+long_term_forecast_Climate_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.0850354433059692, mae:0.8331729769706726, rmse:1.0416502952575684, mape:2.2425789833068848, mspe:68.68466186523438
+mse_orig:0.31219807267189026, mae_orig:0.44691845774650574, rmse_orig:0.558746874332428, mape_orig:0.19180206954479218, mspe_orig:0.07172085344791412
+
+long_term_forecast_Climate_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.1204849481582642, mae:0.8414070010185242, rmse:1.0585296154022217, mape:1.9750409126281738, mspe:38.195552825927734
+mse_orig:0.32239797711372375, mae_orig:0.45133525133132935, rmse_orig:0.5678009986877441, mape_orig:0.19501151144504547, mspe_orig:0.0761108547449112
+
+long_term_forecast_Climate_DLinear_mm_tsflib_s2021_sl24_pl36_DLinear_custom_ftS_sl24_ll12_pl36_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.1400965452194214, mae:0.840392529964447, rmse:1.0677530765533447, mape:2.2925496101379395, mspe:59.33948516845703
+mse_orig:0.32804080843925476, mae_orig:0.4507911503314972, rmse_orig:0.5727484822273254, mape_orig:0.19376829266548157, mspe_orig:0.07667018473148346
+
+long_term_forecast_Climate_DLinear_mm_tsflib_s2021_sl24_pl48_DLinear_custom_ftS_sl24_ll12_pl48_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.103621482849121, mae:0.8246389627456665, rmse:1.0505338907241821, mape:2.309389114379883, mspe:56.81511688232422
+mse_orig:0.3175458014011383, mae_orig:0.44234076142311096, rmse_orig:0.5635120272636414, mape_orig:0.1879667341709137, mspe_orig:0.07119675725698471
+
+long_term_forecast_Economy_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.4053363800048828, mae:0.5175358057022095, rmse:0.6366603374481201, mape:0.26717063784599304, mspe:0.13068753480911255
+mse_orig:216001200.0, mae_orig:11947.048828125, rmse_orig:14696.9794921875, mape_orig:0.14221277832984924, mspe_orig:0.028876859694719315
+
+long_term_forecast_Economy_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.5442372560501099, mae:0.6131700873374939, rmse:0.7377243638038635, mape:0.3019791543483734, mspe:0.14788654446601868
+mse_orig:290020608.0, mae_orig:14154.7197265625, rmse_orig:17029.9921875, mape_orig:0.16433992981910706, mspe_orig:0.03604025021195412
+
+long_term_forecast_Economy_DLinear_mm_tsflib_s2021_sl24_pl36_DLinear_custom_ftS_sl24_ll12_pl36_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.6589758992195129, mae:0.6809313893318176, rmse:0.8117733001708984, mape:0.33377572894096375, mspe:0.1697184443473816
+mse_orig:351164032.0, mae_orig:15718.953125, rmse_orig:18739.37109375, mape_orig:0.1824290156364441, mspe_orig:0.04341535642743111
+
+long_term_forecast_Energy_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.1907147616147995, mae:0.32887333631515503, rmse:0.4367090165615082, mape:0.9480746388435364, mspe:7.097732067108154
+mse_orig:0.1665065735578537, mae_orig:0.3072926700115204, rmse_orig:0.4080521762371063, mape_orig:0.09675829857587814, mspe_orig:0.015707196667790413
+
+long_term_forecast_Energy_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.27954575419425964, mae:0.3961367905139923, rmse:0.5287208557128906, mape:1.3733121156692505, mspe:30.426685333251953
+mse_orig:0.2440618872642517, mae_orig:0.37014228105545044, rmse_orig:0.49402621388435364, mape_orig:0.11503539234399796, mspe_orig:0.021541614085435867
+
+long_term_forecast_Energy_DLinear_mm_tsflib_s2021_sl24_pl36_DLinear_custom_ftS_sl24_ll12_pl36_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.3592008948326111, mae:0.451231449842453, rmse:0.5993337035179138, mape:1.7929003238677979, mspe:53.53736114501953
+mse_orig:0.31360605359077454, mae_orig:0.4216215908527374, rmse_orig:0.5600054264068604, mape_orig:0.13021013140678406, mspe_orig:0.02726583555340767
+
+long_term_forecast_Energy_DLinear_mm_tsflib_s2021_sl24_pl48_DLinear_custom_ftS_sl24_ll12_pl48_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.44201648235321045, mae:0.49394044280052185, rmse:0.6648432016372681, mape:2.0454304218292236, mspe:70.26731872558594
+mse_orig:0.3859094977378845, mae_orig:0.4615280330181122, rmse_orig:0.6212161183357239, mape_orig:0.14124205708503723, mspe_orig:0.03219352290034294
+
+long_term_forecast_Public_Health_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.7674494981765747, mae:0.9188696146011353, rmse:1.3294545412063599, mape:3.258903980255127, mspe:261.04534912109375
+mse_orig:2.5790457725524902, mae_orig:1.1099666357040405, rmse_orig:1.605940818786621, mape_orig:0.47881051898002625, mspe_orig:0.41173896193504333
+
+long_term_forecast_Public_Health_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:2.078326463699341, mae:0.9931598901748657, rmse:1.4416402578353882, mape:3.121245861053467, mspe:218.66363525390625
+mse_orig:3.032674789428711, mae_orig:1.19970703125, rmse_orig:1.7414577007293701, mape_orig:0.5194839835166931, mspe_orig:0.46643802523612976
+
+long_term_forecast_Public_Health_DLinear_mm_tsflib_s2021_sl24_pl36_DLinear_custom_ftS_sl24_ll12_pl36_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.9784927368164062, mae:0.9768952131271362, rmse:1.4065890312194824, mape:3.2808170318603516, mspe:198.32125854492188
+mse_orig:2.886998176574707, mae_orig:1.180059790611267, rmse_orig:1.699116826057434, mape_orig:0.5320461392402649, mspe_orig:0.5187456011772156
+
+long_term_forecast_Public_Health_DLinear_mm_tsflib_s2021_sl24_pl48_DLinear_custom_ftS_sl24_ll12_pl48_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.9120099544525146, mae:0.9535712599754333, rmse:1.3827544450759888, mape:3.1277661323547363, mspe:155.3172149658203
+mse_orig:2.789987325668335, mae_orig:1.1518850326538086, rmse_orig:1.670325517654419, mape_orig:0.5322039127349854, mspe_orig:0.5889896154403687
+
+long_term_forecast_Security_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:76.40335083007812, mae:4.092134475708008, rmse:8.740900993347168, mape:2.2152934074401855, mspe:150.3818817138672
+mse_orig:1.046816103649719e+19, mae_orig:1514707840.0, rmse_orig:3235453696.0, mape_orig:0.6258675456047058, mspe_orig:1.999572992324829
+
+long_term_forecast_Security_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:69.98628997802734, mae:4.182101726531982, rmse:8.3657808303833, mape:1.7866281270980835, mspe:103.90843200683594
+mse_orig:9.588948657974018e+18, mae_orig:1548009472.0, rmse_orig:3096602880.0, mape_orig:0.6252921223640442, mspe_orig:2.4407927989959717
+
+long_term_forecast_SocialGood_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.3183603286743164, mae:0.8158565163612366, rmse:1.1481987237930298, mape:1.649633526802063, mspe:18.31771469116211
+mse_orig:3.507362127304077, mae_orig:1.3307209014892578, rmse_orig:1.8727952241897583, mape_orig:0.24253951013088226, mspe_orig:0.09445568919181824
+
+long_term_forecast_SocialGood_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.5018202066421509, mae:0.9219574332237244, rmse:1.2254877090454102, mape:2.160266876220703, mspe:31.849008560180664
+mse_orig:3.9954380989074707, mae_orig:1.5037791728973389, rmse_orig:1.998859167098999, mape_orig:0.2774614989757538, mspe_orig:0.1155272126197815
+
+long_term_forecast_SocialGood_DLinear_mm_tsflib_s2021_sl24_pl36_DLinear_custom_ftS_sl24_ll12_pl36_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.5516579151153564, mae:0.9611309766769409, rmse:1.2456556558609009, mape:2.5750958919525146, mspe:44.35219192504883
+mse_orig:4.128026008605957, mae_orig:1.5676743984222412, rmse_orig:2.031754493713379, mape_orig:0.28469935059547424, mspe_orig:0.11114594340324402
+
+long_term_forecast_SocialGood_DLinear_mm_tsflib_s2021_sl24_pl48_DLinear_custom_ftS_sl24_ll12_pl48_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:1.7385356426239014, mae:1.0245647430419922, rmse:1.3185354471206665, mape:2.9541375637054443, mspe:57.55777359008789
+mse_orig:4.625195026397705, mae_orig:1.6711393594741821, rmse_orig:2.1506266593933105, mape_orig:0.30444788932800293, mspe_orig:0.12884192168712616
+
+long_term_forecast_Traffic_DLinear_mm_tsflib_s2021_sl24_pl12_DLinear_custom_ftS_sl24_ll12_pl12_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.2603980302810669, mae:0.40237873792648315, rmse:0.510292112827301, mape:0.39309075474739075, mspe:0.6847120523452759
+mse_orig:503802720.0, mae_orig:17698.904296875, rmse_orig:22445.55078125, mape_orig:0.07025972008705139, mspe_orig:0.010006486438214779
+
+long_term_forecast_Traffic_DLinear_mm_tsflib_s2021_sl24_pl24_DLinear_custom_ftS_sl24_ll12_pl24_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.29592832922935486, mae:0.4351774752140045, rmse:0.5439929366111755, mape:0.4205261170864105, mspe:0.7691203951835632
+mse_orig:572544768.0, mae_orig:19141.58203125, rmse_orig:23927.908203125, mape_orig:0.07568197697401047, mspe_orig:0.01103702001273632
+
+long_term_forecast_Traffic_DLinear_mm_tsflib_s2021_sl24_pl36_DLinear_custom_ftS_sl24_ll12_pl36_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.29639628529548645, mae:0.43045011162757874, rmse:0.5444228649139404, mape:0.43601587414741516, mspe:0.8579932451248169
+mse_orig:573450048.0, mae_orig:18933.646484375, rmse_orig:23946.81640625, mape_orig:0.07559238374233246, mspe_orig:0.011453135870397091
+
+long_term_forecast_Traffic_DLinear_mm_tsflib_s2021_sl24_pl48_DLinear_custom_ftS_sl24_ll12_pl48_dm128_nh4_el2_dl1_df256_expand2_dc4_fc1_ebtimeF_dtTrue_mm_tsflib_matrix_0  
+mse:0.3216600716114044, mae:0.4479164183139801, rmse:0.5671508312225342, mape:0.4539877772331238, mspe:0.9019788503646851
+mse_orig:622328960.0, mae_orig:19701.912109375, rmse_orig:24946.521484375, mape_orig:0.0790584459900856, mspe_orig:0.012543934397399426
+
